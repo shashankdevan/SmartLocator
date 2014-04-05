@@ -1,8 +1,11 @@
 package com.example.smartlocator;
 
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.location.Location;
@@ -17,7 +20,9 @@ public class MainActivity extends Activity implements LocationListener {
 
     private Handler locationUpdateHandler = new Handler();
     private GoogleMap map;
-    private MarkerOptions marker;
+    private Marker marker;
+    private LocationManager locationManager;
+    private CameraUpdate cameraUpdate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,11 +30,8 @@ public class MainActivity extends Activity implements LocationListener {
         setContentView(R.layout.activity_main);
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
-		/* register this class to Location Service for updates
-         */
-        LocationManager location = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
-        location.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10, 0, this);
-
+        locationManager = (LocationManager)getSystemService(Service.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5,0,this);
     }
 
     private class LocationRefresher implements Runnable {
@@ -41,11 +43,19 @@ public class MainActivity extends Activity implements LocationListener {
 
         @Override
         public void run() {
-            marker = new MarkerOptions()
-                    .position(new LatLng(location.getLatitude(), location.getLongitude()))
-                    .title("My Location");
+            LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
+            cameraUpdate = CameraUpdateFactory.newLatLngZoom(position, 15);
+            map.animateCamera(cameraUpdate);
 
-            map.addMarker(marker);
+            placeMarker(position);
+        }
+
+        public void placeMarker(LatLng position){
+            MarkerOptions markerOptions = new MarkerOptions()
+                .position(position)
+                .title(position.latitude + "," + position.longitude);
+            map.clear();
+            marker = map.addMarker(markerOptions);
         }
 
     }
