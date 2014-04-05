@@ -1,5 +1,12 @@
 package com.example.smartlocator;
 
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.util.Log;
+import android.widget.Toast;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -23,15 +30,45 @@ public class MainActivity extends Activity implements LocationListener {
     private Marker marker;
     private LocationManager locationManager;
     private CameraUpdate cameraUpdate;
+    private Context context;
+    private float[] gravity = {0, 0, 0};
+    private static final String TAG = "ACCELEROMETER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        context = this;
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
-        locationManager = (LocationManager)getSystemService(Service.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5,0,this);
+        locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5, 0, this);
+
+        AccelerometerListener accelerometerListener = new AccelerometerListener();
+        SensorManager sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
+        Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        sensorManager.registerListener(accelerometerListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    private class AccelerometerListener implements SensorEventListener {
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            final float alpha = (float) 0.8;
+
+            gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
+            gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
+            gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
+
+            Log.d(TAG, Float.valueOf(event.values[0] - gravity[0]).toString() + " " +
+                    Float.valueOf(event.values[1] - gravity[1]).toString() + " " +
+                    Float.valueOf(event.values[2] - gravity[2]).toString());
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
     }
 
     private class LocationRefresher implements Runnable {
@@ -50,10 +87,10 @@ public class MainActivity extends Activity implements LocationListener {
             placeMarker(position);
         }
 
-        public void placeMarker(LatLng position){
+        public void placeMarker(LatLng position) {
             MarkerOptions markerOptions = new MarkerOptions()
-                .position(position)
-                .title(position.latitude + "," + position.longitude);
+                    .position(position)
+                    .title(position.latitude + "," + position.longitude);
             map.clear();
             marker = map.addMarker(markerOptions);
         }
