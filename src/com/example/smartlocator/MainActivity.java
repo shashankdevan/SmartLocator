@@ -21,10 +21,15 @@ import android.app.Service;
 
 public class MainActivity extends Activity implements LocationListener {
 
+    public static final int THRESHOLD = 3;
     private Handler locationUpdateHandler = new Handler();
     private GoogleMap map;
     private float[] gravity = {0, 0, 0};
     private static final String TAG = "ACCELEROMETER";
+
+    private float acclMagnitude = 0;
+    private boolean acclDirection = true;
+    private int stepCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,13 +51,33 @@ public class MainActivity extends Activity implements LocationListener {
         @Override
         public void onSensorChanged(SensorEvent event) {
             isolateGravity(event);
+            detectStep(getMagnitude(event));
+        }
 
-            float currentAcclMagnitude = getMagnitude(event);
-            Log.d(TAG, "Magnitude: " + Float.valueOf(currentAcclMagnitude).toString());
+        private void detectStep(float currentAcclMagnitude) {
+            if (acclDirection) {
+                if (currentAcclMagnitude > acclMagnitude) {
+                    acclMagnitude = currentAcclMagnitude;
+                } else if ((acclMagnitude - currentAcclMagnitude) > THRESHOLD) {
+                    acclDirection = false;
+                    stepCount += 1;
+                }
+            } else {
+                if (currentAcclMagnitude < acclMagnitude) {
+                    acclMagnitude = currentAcclMagnitude;
+                } else if ((currentAcclMagnitude - acclMagnitude) > THRESHOLD) {
+                    acclDirection = true;
+                }
+            }
+
+            Log.d(TAG, "StepCount: " + stepCount);
+            Log.d(TAG, "Magnitude: " + acclMagnitude);
         }
 
         private float getMagnitude(SensorEvent event) {
-            return (float) Math.sqrt(Math.pow(event.values[0] - gravity[0], 2) + Math.pow(event.values[1] - gravity[1], 2) + Math.pow(event.values[2] - gravity[2], 2));
+            return (float) Math.sqrt(Math.pow(event.values[0] - gravity[0], 2)
+                    + Math.pow(event.values[1] - gravity[1], 2)
+                    + Math.pow(event.values[2] - gravity[2], 2));
         }
 
         private void isolateGravity(SensorEvent event) {
