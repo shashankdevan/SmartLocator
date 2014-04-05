@@ -1,12 +1,10 @@
 package com.example.smartlocator;
 
-import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
-import android.widget.Toast;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -30,7 +28,6 @@ public class MainActivity extends Activity implements LocationListener {
     private Marker marker;
     private LocationManager locationManager;
     private CameraUpdate cameraUpdate;
-    private Context context;
     private float[] gravity = {0, 0, 0};
     private static final String TAG = "ACCELEROMETER";
 
@@ -38,7 +35,6 @@ public class MainActivity extends Activity implements LocationListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        context = this;
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
         locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
@@ -54,15 +50,22 @@ public class MainActivity extends Activity implements LocationListener {
 
         @Override
         public void onSensorChanged(SensorEvent event) {
+            isolateGravity(event);
+
+            float currentAcclMagnitude = getMagnitude(event);
+            Log.d(TAG, "Magnitude: " + Float.valueOf(currentAcclMagnitude).toString());
+        }
+
+        private float getMagnitude(SensorEvent event) {
+            return (float) Math.sqrt(Math.pow(event.values[0] - gravity[0], 2) + Math.pow(event.values[1] - gravity[1], 2) + Math.pow(event.values[2] - gravity[2], 2));
+        }
+
+        private void isolateGravity(SensorEvent event) {
             final float alpha = (float) 0.8;
 
             gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
             gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
             gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
-
-            Log.d(TAG, Float.valueOf(event.values[0] - gravity[0]).toString() + " " +
-                    Float.valueOf(event.values[1] - gravity[1]).toString() + " " +
-                    Float.valueOf(event.values[2] - gravity[2]).toString());
         }
 
         @Override
