@@ -15,63 +15,63 @@ import android.app.Service;
 
 public class MainActivity extends Activity implements LocationListener {
 
-	private Handler locationUpdateHandler = new Handler();
-	private GoogleMap map;
-	private MarkerOptions marker;
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
+    private Handler locationUpdateHandler = new Handler();
+    private GoogleMap map;
+    private MarkerOptions marker;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
 		/* register this class to Location Service for updates
-		 */
-		LocationManager location = (LocationManager)getSystemService(Service.LOCATION_SERVICE);
-		location.requestLocationUpdates(LocationManager.GPS_PROVIDER,10,0,this);
+         */
+        LocationManager location = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
+        location.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10, 0, this);
 
-	}
+    }
 
-	private  class LocationRefresher implements Runnable {
-		Location location;
+    private class LocationRefresher implements Runnable {
+        Location location;
 
-		public LocationRefresher(Location location_) {
-			location = location_;
-		}
+        public LocationRefresher(Location location_) {
+            location = location_;
+        }
 
-		@Override
-		public void run() {
-			marker = new MarkerOptions()
-			.position(new LatLng(location.getLatitude(), location.getLongitude()))
-			.title("My Location");
+        @Override
+        public void run() {
+            marker = new MarkerOptions()
+                    .position(new LatLng(location.getLatitude(), location.getLongitude()))
+                    .title("My Location");
 
-			map.addMarker(marker);
-		}
+            map.addMarker(marker);
+        }
 
-	}
+    }
 
-	@Override
-	public void onLocationChanged(Location location) {
-		LocationRefresher task = new LocationRefresher(location);
-		locationUpdateHandler.post(task);
-	}
+    @Override
+    public void onLocationChanged(Location location) {
+        LocationRefresher task = new LocationRefresher(location);
+        locationUpdateHandler.post(task);
+    }
 
-	@Override
-	public void onProviderDisabled(String provider) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onProviderDisabled(String provider) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onProviderEnabled(String provider) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onProviderEnabled(String provider) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        // TODO Auto-generated method stub
 
-	}
-
+    }
 
 }
