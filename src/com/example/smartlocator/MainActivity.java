@@ -5,12 +5,10 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.location.Location;
@@ -25,9 +23,6 @@ public class MainActivity extends Activity implements LocationListener {
 
     private Handler locationUpdateHandler = new Handler();
     private GoogleMap map;
-    private Marker marker;
-    private LocationManager locationManager;
-    private CameraUpdate cameraUpdate;
     private float[] gravity = {0, 0, 0};
     private static final String TAG = "ACCELEROMETER";
 
@@ -37,7 +32,7 @@ public class MainActivity extends Activity implements LocationListener {
         setContentView(R.layout.activity_main);
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
-        locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5, 0, this);
 
         AccelerometerListener accelerometerListener = new AccelerometerListener();
@@ -84,18 +79,15 @@ public class MainActivity extends Activity implements LocationListener {
         @Override
         public void run() {
             LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
-            cameraUpdate = CameraUpdateFactory.newLatLngZoom(position, 15);
-            map.animateCamera(cameraUpdate);
-
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 15));
             placeMarker(position);
         }
 
         public void placeMarker(LatLng position) {
-            MarkerOptions markerOptions = new MarkerOptions()
-                    .position(position)
-                    .title(position.latitude + "," + position.longitude);
             map.clear();
-            marker = map.addMarker(markerOptions);
+            map.addMarker(new MarkerOptions()
+                    .position(position)
+                    .title(position.latitude + "," + position.longitude));
         }
 
     }
