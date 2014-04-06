@@ -34,11 +34,17 @@ public class MainActivity extends Activity implements LocationListener {
     private float acclMagnitude = 0;
     private boolean acclDirection = true;
     private int stepCount = 0;
+    final private double STEP_SIZE = 0.419;
+    final private double METER_PER_LAT_DEGREE = 110958.9773719797;
+    final private double METER_PER_LNG_DEGREE = 90163.65604055098;
 
     private float[] acclReadings = new float[3];
     private float[] magnReadings = new float[3];
     private boolean readAccl = false;
     private boolean readMagn = false;
+
+    private double lastUpdateTime;
+    private double lastLat, lastLng;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,50 +67,55 @@ public class MainActivity extends Activity implements LocationListener {
 
         currentPeakTime = System.currentTimeMillis();
     }
-    
+
     public class OrientationListener implements SensorEventListener {
 
-    	@Override
-    	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-    		
-    	}
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
-    	@Override
-    	public void onSensorChanged(SensorEvent event) {
-    		switch (event.sensor.getType()) {
-    		case Sensor.TYPE_ACCELEROMETER:
-    			acclReadings = event.values;
-    			readAccl = true;
-    			break;
-    		case Sensor.TYPE_MAGNETIC_FIELD:
-    			magnReadings = event.values;
-    			readMagn = true;
-    			break;
-    		default:
-    			Log.d("ORIENT", "Invalid Sensor Received");
-    		}
-    		
-        	if (readAccl && readMagn) {
-        		readAccl = readMagn = false;
-        		
-        		float[] R = new float[9];
-        		float[] I = new float[9];
-        		float[] orientation = new float[3];
-        		
-        		SensorManager.getRotationMatrix(R, I, acclReadings, magnReadings);
-        		SensorManager.getOrientation(R, orientation);
-        		Log.d(TAG, orientation[0] * 57.29 + " " + orientation[1] * 57.29 + " " + orientation[2] * 57.29);
-        	}
-    	}
- 
-    }
-
-    private class AccelerometerListener implements SensorEventListener {
+        }
 
         @Override
         public void onSensorChanged(SensorEvent event) {
-            isolateGravity(event);
-            detectStep(getMagnitude(event));
+            switch (event.sensor.getType()) {
+                case Sensor.TYPE_ACCELEROMETER:
+                    acclReadings = event.values;
+                    readAccl = true;
+                    isolateGravity(event);
+                    detectStep(getMagnitude(event));
+                    break;
+                case Sensor.TYPE_MAGNETIC_FIELD:
+                    magnReadings = event.values;
+                    readMagn = true;
+                    break;
+                default:
+                    Log.d("ORIENT", "Invalid Sensor Received");
+            }
+            long currentTime = System.currentTimeMillis();
+            if (readAccl && readMagn && (currentTime - lastUpdateTime) > 1000) {
+                readAccl = readMagn = false;
+
+                float[] R = new float[9];
+                float[] I = new float[9];
+                float[] orientation = new float[3];
+                double azimuthalAngle;
+
+                SensorManager.getRotationMatrix(R, I, acclReadings, magnReadings);
+                SensorManager.getOrientation(R, orientation);
+
+                azimuthalAngle = orientation[0] * 57.29;
+                updateLocation(azimuthalAngle);
+                lastUpdateTime = currentTime;
+            }
+        }
+
+        private void updateLocation(double azimuthalAngle) {
+            double deltaLat = (stepCount * STEP_SIZE) * Math.cos(azimuthalAngle) / METER_PER_LAT_DEGREE;
+            double deltaLng = (stepCount * STEP_SIZE) * Math.sin(azimuthalAngle) / METER_PER_LNG_DEGREE;
+
+            lastLat += deltaLat;
+            lastLng += deltaLng;
+            System.out.println(lastLat + " " + lastLng);
         }
 
         private void detectStep(float currentAcclMagnitude) {
@@ -144,11 +155,6 @@ public class MainActivity extends Activity implements LocationListener {
             gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
             gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
         }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-        }
     }
 
     private class LocationRefresher implements Runnable {
@@ -176,6 +182,9 @@ public class MainActivity extends Activity implements LocationListener {
 
     @Override
     public void onLocationChanged(Location location) {
+        lastLat = location.getLatitude();
+        lastLng = location.getLongitude();
+
         LocationRefresher task = new LocationRefresher(location);
         locationUpdateHandler.post(task);
     }
