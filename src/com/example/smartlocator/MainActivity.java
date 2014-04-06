@@ -44,10 +44,15 @@ public class MainActivity extends Activity implements LocationListener {
         LocationManager locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5, 0, this);
 
-        AccelerometerListener accelerometerListener = new AccelerometerListener();
         SensorManager sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
+
+        AccelerometerListener accelerometerListener = new AccelerometerListener();
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensorManager.registerListener(accelerometerListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+
+        GyroListener gyroListener = new GyroListener();
+        Sensor gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        sensorManager.registerListener(gyroListener, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
 
         currentPeakTime = System.currentTimeMillis();
     }
@@ -97,6 +102,19 @@ public class MainActivity extends Activity implements LocationListener {
             gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
             gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
             gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
+    }
+
+    private class GyroListener implements SensorEventListener {
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            Log.d(TAG, event.values[0] + "  " + event.values[1] + "  " + event.values[2]);
         }
 
         @Override
