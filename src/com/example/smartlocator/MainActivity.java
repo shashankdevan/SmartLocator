@@ -35,11 +35,6 @@ public class MainActivity extends Activity implements LocationListener {
     private boolean acclDirection = true;
     private int stepCount = 0;
 
-    private static final float NS2S = 1.0f / 1000000000.0f;
-    private final float[] deltaRotationVector = new float[4];
-    private float timestamp;
-    private float[] rotationCurrent = {1, 1, 1};
-    
     private float[] acclReadings = new float[3];
     private float[] magnReadings = new float[3];
     private boolean readAccl = false;
@@ -58,20 +53,13 @@ public class MainActivity extends Activity implements LocationListener {
 
         OrientationListener orientationListener = new OrientationListener();
 
-//        AccelerometerListener accelerometerListener = new AccelerometerListener();
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensorManager.registerListener(orientationListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 
-//        GyroListener gyroListener = new GyroListener();
-//        Sensor gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-//        sensorManager.registerListener(orientationListener, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
-
-//        MagnetometerListener magnetometerListener = new MagnetometerListener();
         Sensor magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         sensorManager.registerListener(orientationListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 
         currentPeakTime = System.currentTimeMillis();
-//        timestamp = System.currentTimeMillis();
     }
     
     public class OrientationListener implements SensorEventListener {
@@ -105,13 +93,11 @@ public class MainActivity extends Activity implements LocationListener {
         		
         		SensorManager.getRotationMatrix(R, I, acclReadings, magnReadings);
         		SensorManager.getOrientation(R, orientation);
-//        		Log.d(TAG, R[0] + " " + R[1] + " " + R[2] + " " + R[3] + " " + R[4]);
         		Log.d(TAG, orientation[0] * 57.29 + " " + orientation[1] * 57.29 + " " + orientation[2] * 57.29);
         	}
     	}
  
     }
-
 
     private class AccelerometerListener implements SensorEventListener {
 
@@ -143,7 +129,6 @@ public class MainActivity extends Activity implements LocationListener {
                 }
             }
 
-//            Log.d(TAG, "StepCount: " + stepCount);
         }
 
         private float getMagnitude(SensorEvent event) {
@@ -158,57 +143,6 @@ public class MainActivity extends Activity implements LocationListener {
             gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
             gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
             gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
-        }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-        }
-    }
-
-    private class GyroListener implements SensorEventListener {
-
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-//            if (timestamp != 0) {
-            final float dT = (event.timestamp - timestamp) * NS2S;
-
-            float axisX = event.values[0];
-            float axisY = event.values[1];
-            float axisZ = event.values[2];
-
-            float omegaMagnitude = (float) Math.sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
-
-//            Log.d(TAG, axisX + "  " + axisY + "  " + axisZ);
-//                if (omegaMagnitude > EPSILON) {
-            axisX /= omegaMagnitude;
-            axisY /= omegaMagnitude;
-            axisZ /= omegaMagnitude;
-//                }
-
-            float thetaOverTwo = omegaMagnitude * dT / 2.0f;
-            float sinThetaOverTwo = (float) Math.sin(thetaOverTwo);
-            float cosThetaOverTwo = (float) Math.cos(thetaOverTwo);
-            deltaRotationVector[0] = sinThetaOverTwo * axisX;
-            deltaRotationVector[1] = sinThetaOverTwo * axisY;
-            deltaRotationVector[2] = sinThetaOverTwo * axisZ;
-            deltaRotationVector[3] = cosThetaOverTwo;
-//            }
-            timestamp = event.timestamp;
-            float[] deltaRotationMatrix = new float[9];
-            SensorManager.getRotationMatrixFromVector(deltaRotationMatrix, deltaRotationVector);
-
-            float[] temp = new float[3];
-            for (int i = 0; i < 3; i++) {
-                temp[i] = 0;
-                for (int j = 0; j < 3; j++)
-                    temp[i] += rotationCurrent[j] * deltaRotationMatrix[i + (j * 3)];
-            }
-
-            for (int i = 0; i < 3; i++)
-                rotationCurrent[i] = temp[i];
-
-//            Log.d(TAG, rotationCurrent[0] + "  " + rotationCurrent[1] + "  " + rotationCurrent[2]);
         }
 
         @Override
@@ -264,15 +198,4 @@ public class MainActivity extends Activity implements LocationListener {
 
     }
 
-    private class MagnetometerListener implements SensorEventListener {
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            Log.d(TAG, "X: " + event.values[0] + "  Y: " + event.values[0] + "  Z: " + event.values[0]);
-        }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-        }
-    }
 }
