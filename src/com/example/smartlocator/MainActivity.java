@@ -35,27 +35,21 @@ public class MainActivity extends Activity implements LocationListener {
     private boolean acclDirection = true;
     private int stepCount = 0;
 
-    private float totalDistance = 0;
-    private long lastRecordedTime;
-
-    private float totalAccl = 0;
-    private int readingCount = 0;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
-//        LocationManager locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
-//        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5, 0, this);
+        LocationManager locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5, 0, this);
 
-        currentPeakTime = System.currentTimeMillis();
-        lastRecordedTime = System.currentTimeMillis();
         AccelerometerListener accelerometerListener = new AccelerometerListener();
         SensorManager sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensorManager.registerListener(accelerometerListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+
+        currentPeakTime = System.currentTimeMillis();
     }
 
     private class AccelerometerListener implements SensorEventListener {
@@ -63,27 +57,7 @@ public class MainActivity extends Activity implements LocationListener {
         @Override
         public void onSensorChanged(SensorEvent event) {
             isolateGravity(event);
-            countDistance(getMagnitude(event));
-
-//            countDistance(getMagnitude(event));
-//            Log.d(TAG, " Axis: " + Float.valueOf(event.values[0]).toString() + "  " + Float.valueOf(event.values[1]).toString() + "  " + Float.valueOf(event.values[2]).toString());
-//            Log.d(TAG, "Total: " + Float.valueOf(getMagnitude(event)).toString());
-//            detectStep(getMagnitude(event));
-        }
-
-        private void countDistance(float acceleration) {
-            float accl;
-            long currentTime = System.currentTimeMillis();
-            if ((currentTime - lastRecordedTime) > 3000) {
-                accl = totalAccl / readingCount;
-                totalDistance += accl * Math.pow((currentTime - lastRecordedTime), 2) / 1000000;
-                Log.d(TAG, "Distance: " + totalDistance);
-                lastRecordedTime = System.currentTimeMillis();
-                totalAccl = readingCount = 0;
-            } else {
-                totalAccl += acceleration;
-                readingCount += 1;
-            }
+            detectStep(getMagnitude(event));
         }
 
         private void detectStep(float currentAcclMagnitude) {
