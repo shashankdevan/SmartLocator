@@ -39,6 +39,11 @@ public class MainActivity extends Activity implements LocationListener {
     private final float[] deltaRotationVector = new float[4];
     private float timestamp;
     private float[] rotationCurrent = {1, 1, 1};
+    
+    private float[] acclReadings = new float[3];
+    private float[] magnReadings = new float[3];
+    private boolean readAccl = false;
+    private boolean readMagn = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,20 +56,60 @@ public class MainActivity extends Activity implements LocationListener {
 
         SensorManager sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
 
-        AccelerometerListener accelerometerListener = new AccelerometerListener();
+        OrientationListener orientationListener = new OrientationListener();
+
+//        AccelerometerListener accelerometerListener = new AccelerometerListener();
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        sensorManager.registerListener(accelerometerListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(orientationListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 
-        GyroListener gyroListener = new GyroListener();
-        Sensor gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        sensorManager.registerListener(gyroListener, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
+//        GyroListener gyroListener = new GyroListener();
+//        Sensor gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+//        sensorManager.registerListener(orientationListener, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
 
-        MagnetometerListener magnetometerListener = new MagnetometerListener();
-        Sensor magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        sensorManager.registerListener(magnetometerListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+//        MagnetometerListener magnetometerListener = new MagnetometerListener();
+        Sensor magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        sensorManager.registerListener(orientationListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 
         currentPeakTime = System.currentTimeMillis();
 //        timestamp = System.currentTimeMillis();
+    }
+    
+    public class OrientationListener implements SensorEventListener {
+
+    	@Override
+    	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    		
+    	}
+
+    	@Override
+    	public void onSensorChanged(SensorEvent event) {
+    		switch (event.sensor.getType()) {
+    		case Sensor.TYPE_ACCELEROMETER:
+    			acclReadings = event.values;
+    			readAccl = true;
+    			break;
+    		case Sensor.TYPE_MAGNETIC_FIELD:
+    			magnReadings = event.values;
+    			readMagn = true;
+    			break;
+    		default:
+    			Log.d("ORIENT", "Invalid Sensor Received");
+    		}
+    		
+        	if (readAccl && readMagn) {
+        		readAccl = readMagn = false;
+        		
+        		float[] R = new float[9];
+        		float[] I = new float[9];
+        		float[] orientation = new float[3];
+        		
+        		SensorManager.getRotationMatrix(R, I, acclReadings, magnReadings);
+        		SensorManager.getOrientation(R, orientation);
+//        		Log.d(TAG, R[0] + " " + R[1] + " " + R[2] + " " + R[3] + " " + R[4]);
+        		Log.d(TAG, orientation[0] * 57.29 + " " + orientation[1] * 57.29 + " " + orientation[2] * 57.29);
+        	}
+    	}
+ 
     }
 
 
