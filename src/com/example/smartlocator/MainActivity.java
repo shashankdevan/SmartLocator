@@ -59,9 +59,14 @@ public class MainActivity extends Activity implements LocationListener {
         Sensor gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         sensorManager.registerListener(gyroListener, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
 
+        MagnetometerListener magnetometerListener = new MagnetometerListener();
+        Sensor magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        sensorManager.registerListener(magnetometerListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+
         currentPeakTime = System.currentTimeMillis();
 //        timestamp = System.currentTimeMillis();
     }
+
 
     private class AccelerometerListener implements SensorEventListener {
 
@@ -121,13 +126,13 @@ public class MainActivity extends Activity implements LocationListener {
         @Override
         public void onSensorChanged(SensorEvent event) {
 //            if (timestamp != 0) {
-                final float dT = (event.timestamp - timestamp) * NS2S;
+            final float dT = (event.timestamp - timestamp) * NS2S;
 
-                float axisX = event.values[0];
-                float axisY = event.values[1];
-                float axisZ = event.values[2];
+            float axisX = event.values[0];
+            float axisY = event.values[1];
+            float axisZ = event.values[2];
 
-                float omegaMagnitude = (float) Math.sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
+            float omegaMagnitude = (float) Math.sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
 
 //            Log.d(TAG, axisX + "  " + axisY + "  " + axisZ);
 //                if (omegaMagnitude > EPSILON) {
@@ -214,4 +219,15 @@ public class MainActivity extends Activity implements LocationListener {
 
     }
 
+    private class MagnetometerListener implements SensorEventListener {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            Log.d(TAG, "X: " + event.values[0] + "  Y: " + event.values[0] + "  Z: " + event.values[0]);
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
+    }
 }
