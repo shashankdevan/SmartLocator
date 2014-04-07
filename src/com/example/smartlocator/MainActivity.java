@@ -218,16 +218,13 @@ public class MainActivity extends Activity implements LocationListener {
 
         @Override
         public void run() {
-            if (lastLocationUpdateTime == 0) {
-                LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
-                lastLat = location.getLatitude();
-                lastLng = location.getLongitude();
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 18));
-            } else if ((System.currentTimeMillis() - lastLocationUpdateTime) > GPS_UPDATE_INTERVAL) {
-                lastLat = location.getLatitude();
-                lastLng = location.getLongitude();
+            lastLat = location.getLatitude();
+            lastLng = location.getLongitude();
+
+            if (lastLocationUpdateTime == 0)
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), 18));
+            else if ((System.currentTimeMillis() - lastLocationUpdateTime) > GPS_UPDATE_INTERVAL)
                 lastLocationUpdateTime = System.currentTimeMillis();
-            }
         }
 
     }
