@@ -26,7 +26,7 @@ public class MainActivity extends Activity implements LocationListener {
     public static final float THRESHOLD = 2.5f;
     private Handler locationUpdateHandler = new Handler();
     private GoogleMap map;
-    private float[] gravity = {0, 0, 0};
+    private float[] filteredAccl = {0, 0, 0};
 
     private long currentPeakTime;
     private float currentPeak = 0;
@@ -85,8 +85,8 @@ public class MainActivity extends Activity implements LocationListener {
         public void onSensorChanged(SensorEvent event) {
             switch (event.sensor.getType()) {
                 case Sensor.TYPE_ACCELEROMETER:
-                    isolateGravity(event);
-                    acclReadings = gravity.clone();
+                    lowPassAccl(event);
+                    acclReadings = filteredAccl.clone();
                     readAccl = true;
                     detectStep(getMagnitude(event));
                     break;
@@ -116,7 +116,7 @@ public class MainActivity extends Activity implements LocationListener {
 
         private void updateLocation(double azimuthalAngle) {
             Log.d("ANGLE", Double.valueOf(Math.toDegrees(azimuthalAngle)).toString());
-            Log.d("METERS--- ", String.valueOf((stepCount * STEP_SIZE) * Math.sin(azimuthalAngle)));
+            Log.d("METERS", String.valueOf((stepCount * STEP_SIZE) * Math.sin(azimuthalAngle)));
             double deltaLat = (stepCount * STEP_SIZE) * Math.cos(azimuthalAngle) / METER_PER_LAT_DEGREE;
             double deltaLng = (stepCount * STEP_SIZE) * Math.sin(azimuthalAngle) / METER_PER_LNG_DEGREE;
 
@@ -151,27 +151,26 @@ public class MainActivity extends Activity implements LocationListener {
                 }
             }
 
-            Log.d("Step", String.valueOf(stepCount));
+            Log.d("STEP", String.valueOf(stepCount));
         }
 
         private float getMagnitude(SensorEvent event) {
-            return (float) Math.sqrt(Math.pow(event.values[0] - gravity[0], 2)
-                    + Math.pow(event.values[1] - gravity[1], 2)
-                    + Math.pow(event.values[2] - gravity[2], 2));
+            return (float) Math.sqrt(Math.pow(event.values[0] - filteredAccl[0], 2)
+                    + Math.pow(event.values[1] - filteredAccl[1], 2)
+                    + Math.pow(event.values[2] - filteredAccl[2], 2));
         }
 
-        private void isolateGravity(SensorEvent event) {
+        private void lowPassAccl(SensorEvent event) {
             final float alpha = (float) 0.8;
 
-            gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
-            gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
-            gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
+            for (int i = 0; i < event.values.length; i++)
+                filteredAccl[i] = alpha * filteredAccl[i] + (1 - alpha) * event.values[i];
         }
 
         private void lowPassMagn(SensorEvent event) {
             final float alpha = (float) 0.8;
 
-            for (int i = 0; i<event.values.length;i++)
+            for (int i = 0; i < event.values.length; i++)
                 filteredMagn[i] = alpha * filteredMagn[i] + (1 - alpha) * event.values[i];
         }
 
