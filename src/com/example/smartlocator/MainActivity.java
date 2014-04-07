@@ -23,23 +23,21 @@ public class MainActivity extends Activity implements LocationListener {
 
     public static final String WARN = "WARNING";
 
-    public static final float THRESHOLD = 2.5f;
-    public static final int UPDATE_INTERVAL = 2000;
-    private Handler locationUpdateHandler = new Handler();
-    private GoogleMap map;
-    private long currentPeakTime;
+    public static final float ACCL_THRESHOLD = 2.5f;
+    public static final int MARKER_UPDATE_INTERVAL = 2000;
+    public static final int GPS_UPDATE_INTERVAL = 60000;
 
-    private float currentPeak = 0;
+    private Handler locationUpdateHandler = new Handler();
+
+    private GoogleMap map;
+
+    private long currentPeakTime;
     private long lastKnownPeakTime;
     private float acclMagnitude = 0;
     private boolean acclDirection = true;
     private int stepCount = 0;
 
     public static final int MIN_STEP_TIME = 200;
-    final private double STEP_SIZE = 0.419;
-    final private double METER_PER_LAT_DEGREE = 78095.9773719797;
-    final private double METER_PER_LNG_DEGREE = 90163.65604055098;
-    final private int MAGNETIC_DECLINATION = 0;
 
     private float[] acclReadings = new float[3];
     private float[] filteredAccl = new float[3];
@@ -49,10 +47,9 @@ public class MainActivity extends Activity implements LocationListener {
     private float[] filteredMagn = new float[3];
     private boolean readMagn = false;
 
-    private double lastUpdateTime;
+    private long lastLocationUpdateTime;
+    private long lastMarkerUpdateTime;
     private double lastLat, lastLng;
-
-    private boolean flag = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +76,11 @@ public class MainActivity extends Activity implements LocationListener {
 
     public class SensorListener implements SensorEventListener {
 
+        final private double STEP_SIZE = 0.419;
+        final private double METER_PER_LAT_DEGREE = 78095.9773719797;
+        final private double METER_PER_LNG_DEGREE = 90163.65604055098;
+        final private int MAGNETIC_DECLINATION = 0;
+
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
@@ -102,7 +104,7 @@ public class MainActivity extends Activity implements LocationListener {
                     Log.d(WARN, "Invalid Sensor Received");
             }
 
-            if (readAccl && readMagn && (System.currentTimeMillis() - lastUpdateTime) > UPDATE_INTERVAL) {
+            if (readAccl && readMagn && (System.currentTimeMillis() - lastMarkerUpdateTime) > MARKER_UPDATE_INTERVAL) {
                 readAccl = readMagn = false;
 
                 float[] R = new float[9];
@@ -113,7 +115,7 @@ public class MainActivity extends Activity implements LocationListener {
                 SensorManager.getOrientation(R, orientation);
 
                 updateLocation(orientation[0] + Math.toRadians(MAGNETIC_DECLINATION));
-                lastUpdateTime = System.currentTimeMillis();
+                lastMarkerUpdateTime = System.currentTimeMillis();
             }
         }
 
@@ -134,7 +136,7 @@ public class MainActivity extends Activity implements LocationListener {
                 if (currentAcclMagnitude > acclMagnitude) {
                     acclMagnitude = currentAcclMagnitude;
                     currentPeakTime = System.currentTimeMillis();
-                } else if ((acclMagnitude - currentAcclMagnitude) > THRESHOLD) {
+                } else if ((acclMagnitude - currentAcclMagnitude) > ACCL_THRESHOLD) {
                     if ((currentPeakTime - lastKnownPeakTime) > MIN_STEP_TIME)
                         stepCount += 1;
                     lastKnownPeakTime = currentPeakTime;
@@ -144,7 +146,7 @@ public class MainActivity extends Activity implements LocationListener {
             } else {
                 if (currentAcclMagnitude < acclMagnitude) {
                     acclMagnitude = currentAcclMagnitude;
-                } else if ((currentAcclMagnitude - acclMagnitude) > THRESHOLD) {
+                } else if ((currentAcclMagnitude - acclMagnitude) > ACCL_THRESHOLD) {
                     acclDirection = true;
                 }
             }
@@ -173,6 +175,7 @@ public class MainActivity extends Activity implements LocationListener {
         }
 
         public void placeMarker(LatLng position) {
+//            map.moveCamera(CameraUpdateFactory.newLatLng(position));
             map.clear();
             map.addMarker(new MarkerOptions()
                     .position(position)
@@ -196,16 +199,16 @@ public class MainActivity extends Activity implements LocationListener {
 
     @Override
     public void onLocationChanged(Location location) {
-        if (flag) {
+        if (lastLocationUpdateTime == 0) {
+            LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
             lastLat = location.getLatitude();
             lastLng = location.getLongitude();
-
-            LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 21));
-
-            flag = false;
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 18));
+        } else if ((System.currentTimeMillis() - lastLocationUpdateTime) > GPS_UPDATE_INTERVAL) {
+            lastLat = location.getLatitude();
+            lastLng = location.getLongitude();
+            lastLocationUpdateTime = System.currentTimeMillis();
         }
-
 //        LocationRefresher task = new LocationRefresher(location);
 //        locationUpdateHandler.post(task);
     }
