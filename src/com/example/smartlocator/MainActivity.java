@@ -33,9 +33,9 @@ public class MainActivity extends Activity implements LocationListener {
     final private double METER_PER_LNG_DEGREE = 90163.65604055098;
     final private int MAGNETIC_DECLINATION = 0;
 
-    private Handler locationUpdateHandler = new Handler();
-
     private GoogleMap map;
+    private Handler locationUpdateHandler = new Handler();
+    private boolean isFirstUpdate = true;
 
     private long currentPeakTime;
     private long lastKnownPeakTime;
@@ -65,7 +65,7 @@ public class MainActivity extends Activity implements LocationListener {
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
         LocationManager locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5, 0, this);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_UPDATE_INTERVAL, 0, this);
 
         SensorManager sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
 
@@ -229,15 +229,10 @@ public class MainActivity extends Activity implements LocationListener {
 
         @Override
         public void run() {
-            if (lastLocationUpdateTime == 0) {
-                setLocation();
+            if (isFirstUpdate) {
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEl));
-            } else if ((System.currentTimeMillis() - lastLocationUpdateTime) > GPS_UPDATE_INTERVAL) {
-                setLocation();
+                isFirstUpdate = false;
             }
-        }
-
-        private void setLocation() {
             lastLat = location.getLatitude();
             lastLng = location.getLongitude();
             lastLocationUpdateTime = System.currentTimeMillis();
