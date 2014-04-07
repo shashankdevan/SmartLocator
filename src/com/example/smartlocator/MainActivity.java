@@ -238,12 +238,12 @@ public class MainActivity extends Activity implements LocationListener {
 
         @Override
         public void run() {
+            lastLat = location.getLatitude();
+            lastLng = location.getLongitude();
             if (isFirstUpdate) {
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEl));
                 isFirstUpdate = false;
             }
-            lastLat = location.getLatitude();
-            lastLng = location.getLongitude();
         }
 
     }
