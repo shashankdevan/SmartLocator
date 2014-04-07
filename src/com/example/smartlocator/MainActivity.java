@@ -184,33 +184,10 @@ public class MainActivity extends Activity implements LocationListener {
 
     }
 
-    private class LocationRefresher implements Runnable {
-        Location location;
-
-        public LocationRefresher(Location location_) {
-            location = location_;
-        }
-
-        @Override
-        public void run() {
-        }
-
-    }
-
     @Override
     public void onLocationChanged(Location location) {
-        if (lastLocationUpdateTime == 0) {
-            LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
-            lastLat = location.getLatitude();
-            lastLng = location.getLongitude();
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 18));
-        } else if ((System.currentTimeMillis() - lastLocationUpdateTime) > GPS_UPDATE_INTERVAL) {
-            lastLat = location.getLatitude();
-            lastLng = location.getLongitude();
-            lastLocationUpdateTime = System.currentTimeMillis();
-        }
-//        LocationRefresher task = new LocationRefresher(location);
-//        locationUpdateHandler.post(task);
+        LocationRefresher task = new LocationRefresher(location);
+        locationUpdateHandler.post(task);
     }
 
     @Override
@@ -228,6 +205,30 @@ public class MainActivity extends Activity implements LocationListener {
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
         // TODO Auto-generated method stub
+
+    }
+
+    private class LocationRefresher implements Runnable {
+
+        Location location;
+
+        public LocationRefresher(Location location_) {
+            location = location_;
+        }
+
+        @Override
+        public void run() {
+            if (lastLocationUpdateTime == 0) {
+                LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
+                lastLat = location.getLatitude();
+                lastLng = location.getLongitude();
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 18));
+            } else if ((System.currentTimeMillis() - lastLocationUpdateTime) > GPS_UPDATE_INTERVAL) {
+                lastLat = location.getLatitude();
+                lastLng = location.getLongitude();
+                lastLocationUpdateTime = System.currentTimeMillis();
+            }
+        }
 
     }
 
