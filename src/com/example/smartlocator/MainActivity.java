@@ -34,26 +34,27 @@ public class MainActivity extends Activity implements LocationListener {
     final private int MAGNETIC_DECLINATION = 0;
 
     private GoogleMap map;
+    private SensorManager sensorManager;
+    private SensorListener sensorListener = new SensorListener();
     private Handler locationUpdateHandler = new Handler();
-    private boolean isFirstUpdate = true;
 
+    private boolean isFirstUpdate = true;
     private long currentPeakTime;
     private long lastKnownPeakTime;
     private float acclMagnitude = 0;
     private boolean acclDirection = true;
+
     private int stepCount = 0;
 
     public static final int MIN_STEP_TIME = 200;
-
     private float[] acclReadings = new float[3];
     private float[] filteredAccl = new float[3];
-    private boolean readAccl = false;
 
+    private boolean readAccl = false;
     private float[] magnReadings = new float[3];
     private float[] filteredMagn = new float[3];
-    private boolean readMagn = false;
 
-    private long lastLocationUpdateTime;
+    private boolean readMagn = false;
     private long lastMarkerUpdateTime;
     private double lastLat, lastLng;
 
@@ -67,17 +68,25 @@ public class MainActivity extends Activity implements LocationListener {
         LocationManager locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_UPDATE_INTERVAL, 0, this);
 
-        SensorManager sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
+        sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
+        currentPeakTime = System.currentTimeMillis();
+    }
 
-        SensorListener sensorListener = new SensorListener();
+    @Override
+    protected void onResume() {
+        super.onResume();
 
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensorManager.registerListener(sensorListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 
         Sensor magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         sensorManager.registerListener(sensorListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+    }
 
-        currentPeakTime = System.currentTimeMillis();
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(sensorListener);
     }
 
     public class SensorListener implements SensorEventListener {
@@ -235,7 +244,6 @@ public class MainActivity extends Activity implements LocationListener {
             }
             lastLat = location.getLatitude();
             lastLng = location.getLongitude();
-            lastLocationUpdateTime = System.currentTimeMillis();
         }
 
     }
