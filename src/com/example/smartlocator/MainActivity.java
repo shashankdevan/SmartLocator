@@ -26,6 +26,12 @@ public class MainActivity extends Activity implements LocationListener {
     public static final float ACCL_THRESHOLD = 2.5f;
     public static final int MARKER_UPDATE_INTERVAL = 2000;
     public static final int GPS_UPDATE_INTERVAL = 60000;
+    public static final int DEFAULT_ZOOM_LEVEl = 18;
+
+    final private double STEP_SIZE = 0.419;
+    final private double METER_PER_LAT_DEGREE = 78095.9773719797;
+    final private double METER_PER_LNG_DEGREE = 90163.65604055098;
+    final private int MAGNETIC_DECLINATION = 0;
 
     private Handler locationUpdateHandler = new Handler();
 
@@ -76,11 +82,6 @@ public class MainActivity extends Activity implements LocationListener {
 
     public class SensorListener implements SensorEventListener {
 
-        final private double STEP_SIZE = 0.419;
-        final private double METER_PER_LAT_DEGREE = 78095.9773719797;
-        final private double METER_PER_LNG_DEGREE = 90163.65604055098;
-        final private int MAGNETIC_DECLINATION = 0;
-
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
@@ -104,31 +105,8 @@ public class MainActivity extends Activity implements LocationListener {
                     Log.d(WARN, "Invalid Sensor Received");
             }
 
-            if (readAccl && readMagn && (System.currentTimeMillis() - lastMarkerUpdateTime) > MARKER_UPDATE_INTERVAL) {
-                readAccl = readMagn = false;
-
-                float[] R = new float[9];
-                float[] I = new float[9];
-                float[] orientation = new float[3];
-
-                SensorManager.getRotationMatrix(R, I, acclReadings, magnReadings);
-                SensorManager.getOrientation(R, orientation);
-
-                updateLocation(orientation[0] + Math.toRadians(MAGNETIC_DECLINATION));
-                lastMarkerUpdateTime = System.currentTimeMillis();
-            }
-        }
-
-        private void updateLocation(double azimuthalAngle) {
-            Log.d("ANGLE", Double.valueOf(Math.toDegrees(azimuthalAngle)).toString());
-            Log.d("METERS", String.valueOf((stepCount * STEP_SIZE) * Math.sin(azimuthalAngle)));
-
-            lastLat += (stepCount * STEP_SIZE) * Math.cos(azimuthalAngle) / METER_PER_LAT_DEGREE;
-            lastLng += (stepCount * STEP_SIZE) * Math.sin(azimuthalAngle) / METER_PER_LNG_DEGREE;
-
-            stepCount = 0;
-
-            placeMarker(new LatLng(lastLat, lastLng));
+            SensorLocationRefresher task = new SensorLocationRefresher();
+            locationUpdateHandler.post(task);
         }
 
         private void detectStep(float currentAcclMagnitude) {
@@ -174,19 +152,11 @@ public class MainActivity extends Activity implements LocationListener {
                 filteredMagn[i] = alpha * filteredMagn[i] + (1 - alpha) * event.values[i];
         }
 
-        public void placeMarker(LatLng position) {
-//            map.moveCamera(CameraUpdateFactory.newLatLng(position));
-            map.clear();
-            map.addMarker(new MarkerOptions()
-                    .position(position)
-                    .title(position.latitude + ", " + position.longitude));
-        }
-
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        LocationRefresher task = new LocationRefresher(location);
+        GpsLocationRefresher task = new GpsLocationRefresher(location);
         locationUpdateHandler.post(task);
     }
 
@@ -208,11 +178,52 @@ public class MainActivity extends Activity implements LocationListener {
 
     }
 
-    private class LocationRefresher implements Runnable {
+    private class SensorLocationRefresher implements Runnable {
+
+        @Override
+        public void run() {
+            if (readAccl && readMagn && (System.currentTimeMillis() - lastMarkerUpdateTime) > MARKER_UPDATE_INTERVAL) {
+                readAccl = readMagn = false;
+
+                float[] R = new float[9];
+                float[] I = new float[9];
+                float[] orientation = new float[3];
+
+                SensorManager.getRotationMatrix(R, I, acclReadings, magnReadings);
+                SensorManager.getOrientation(R, orientation);
+
+                updateLocation(orientation[0] + Math.toRadians(MAGNETIC_DECLINATION));
+                lastMarkerUpdateTime = System.currentTimeMillis();
+            }
+        }
+
+        private void updateLocation(double azimuthalAngle) {
+            Log.d("ANGLE", Double.valueOf(Math.toDegrees(azimuthalAngle)).toString());
+            Log.d("METERS", String.valueOf((stepCount * STEP_SIZE) * Math.sin(azimuthalAngle)));
+
+            lastLat += (stepCount * STEP_SIZE) * Math.cos(azimuthalAngle) / METER_PER_LAT_DEGREE;
+            lastLng += (stepCount * STEP_SIZE) * Math.sin(azimuthalAngle) / METER_PER_LNG_DEGREE;
+
+            stepCount = 0;
+
+            placeMarker(new LatLng(lastLat, lastLng));
+        }
+
+        public void placeMarker(LatLng position) {
+//            map.moveCamera(CameraUpdateFactory.newLatLng(position));
+            map.clear();
+            map.addMarker(new MarkerOptions()
+                    .position(position)
+                    .title(position.latitude + ", " + position.longitude));
+        }
+
+    }
+
+    private class GpsLocationRefresher implements Runnable {
 
         Location location;
 
-        public LocationRefresher(Location location_) {
+        public GpsLocationRefresher(Location location_) {
             location = location_;
         }
 
@@ -222,7 +233,7 @@ public class MainActivity extends Activity implements LocationListener {
             lastLng = location.getLongitude();
 
             if (lastLocationUpdateTime == 0)
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), 18));
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEl));
             else if ((System.currentTimeMillis() - lastLocationUpdateTime) > GPS_UPDATE_INTERVAL)
                 lastLocationUpdateTime = System.currentTimeMillis();
         }
