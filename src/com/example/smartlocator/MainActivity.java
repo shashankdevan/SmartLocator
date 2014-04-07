@@ -31,7 +31,7 @@ public class MainActivity extends Activity implements LocationListener {
     public static final float ACCL_THRESHOLD = 2.5f;
     public static final int MARKER_UPDATE_INTERVAL = 2000;
     public static final int GPS_UPDATE_INTERVAL = 60000;
-    public static final int DEFAULT_ZOOM_LEVEl = 18;
+    public static final int DEFAULT_ZOOM_LEVEL = 18;
 
     final private double STEP_SIZE = 0.419;
     final private double METER_PER_LAT_DEGREE = 78095.9773719797;
@@ -305,7 +305,7 @@ public class MainActivity extends Activity implements LocationListener {
             lastLat = location.getLatitude();
             lastLng = location.getLongitude();
             if (isFirstUpdate) {
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEl));
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEL));
                 isFirstUpdate = false;
             }
         }
@@ -313,3 +313,4 @@ public class MainActivity extends Activity implements LocationListener {
     }
 
 }
+    
