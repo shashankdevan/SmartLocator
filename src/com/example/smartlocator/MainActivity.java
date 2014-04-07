@@ -21,11 +21,12 @@ import android.app.Service;
 
 public class MainActivity extends Activity implements LocationListener {
 
-    public static final int THRESHOLD = 3;
+    public static final String WARN = "WARNING";
+
+    public static final float THRESHOLD = 2.5f;
     private Handler locationUpdateHandler = new Handler();
     private GoogleMap map;
     private float[] gravity = {0, 0, 0};
-    private static final String TAG = "ACCELEROMETER";
 
     private long currentPeakTime;
     private float currentPeak = 0;
@@ -35,16 +36,20 @@ public class MainActivity extends Activity implements LocationListener {
     private boolean acclDirection = true;
     private int stepCount = 0;
     final private double STEP_SIZE = 0.419;
-    final private double METER_PER_LAT_DEGREE = 110958.9773719797;
+    final private double METER_PER_LAT_DEGREE = 78095.9773719797;
     final private double METER_PER_LNG_DEGREE = 90163.65604055098;
+    final private int MAGNETIC_DECLINATION = 0;
 
     private float[] acclReadings = new float[3];
     private float[] magnReadings = new float[3];
     private boolean readAccl = false;
     private boolean readMagn = false;
+    float[] filteredMagn = new float[3];
 
     private double lastUpdateTime;
     private double lastLat, lastLng;
+
+    private boolean flag = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,43 +84,48 @@ public class MainActivity extends Activity implements LocationListener {
         public void onSensorChanged(SensorEvent event) {
             switch (event.sensor.getType()) {
                 case Sensor.TYPE_ACCELEROMETER:
-                    acclReadings = event.values;
-                    readAccl = true;
                     isolateGravity(event);
+                    acclReadings = gravity.clone();
+                    readAccl = true;
                     detectStep(getMagnitude(event));
                     break;
                 case Sensor.TYPE_MAGNETIC_FIELD:
-                    magnReadings = event.values;
+                    lowPassMagn(event);
+                    magnReadings = filteredMagn.clone();
                     readMagn = true;
                     break;
                 default:
-                    Log.d("ORIENT", "Invalid Sensor Received");
+                    Log.d(WARN, "Invalid Sensor Received");
             }
-            long currentTime = System.currentTimeMillis();
-            if (readAccl && readMagn && (currentTime - lastUpdateTime) > 1000) {
+
+            if (readAccl && readMagn && (System.currentTimeMillis() - lastUpdateTime) > 2000) {
                 readAccl = readMagn = false;
 
                 float[] R = new float[9];
                 float[] I = new float[9];
                 float[] orientation = new float[3];
-                double azimuthalAngle;
 
                 SensorManager.getRotationMatrix(R, I, acclReadings, magnReadings);
                 SensorManager.getOrientation(R, orientation);
 
-                azimuthalAngle = orientation[0] * 57.29;
-                updateLocation(azimuthalAngle);
-                lastUpdateTime = currentTime;
+                updateLocation(orientation[0] + Math.toRadians(MAGNETIC_DECLINATION));
+                lastUpdateTime = System.currentTimeMillis();
             }
         }
 
         private void updateLocation(double azimuthalAngle) {
+            Log.d("ANGLE", Double.valueOf(Math.toDegrees(azimuthalAngle)).toString());
+            Log.d("METERS--- ", String.valueOf((stepCount * STEP_SIZE) * Math.sin(azimuthalAngle)));
             double deltaLat = (stepCount * STEP_SIZE) * Math.cos(azimuthalAngle) / METER_PER_LAT_DEGREE;
             double deltaLng = (stepCount * STEP_SIZE) * Math.sin(azimuthalAngle) / METER_PER_LNG_DEGREE;
 
+
             lastLat += deltaLat;
             lastLng += deltaLng;
-            System.out.println(lastLat + " " + lastLng);
+
+            stepCount = 0;
+
+            placeMarker(new LatLng(lastLat, lastLng));
         }
 
         private void detectStep(float currentAcclMagnitude) {
@@ -140,6 +150,7 @@ public class MainActivity extends Activity implements LocationListener {
                 }
             }
 
+            Log.d("Step", String.valueOf(stepCount));
         }
 
         private float getMagnitude(SensorEvent event) {
@@ -155,6 +166,21 @@ public class MainActivity extends Activity implements LocationListener {
             gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
             gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
         }
+
+        private void lowPassMagn(SensorEvent event) {
+            final float alpha = (float) 0.8;
+
+            for (int i = 0; i<event.values.length;i++)
+                filteredMagn[i] = alpha * filteredMagn[i] + (1 - alpha) * event.values[i];
+        }
+
+        public void placeMarker(LatLng position) {
+            map.clear();
+            map.addMarker(new MarkerOptions()
+                    .position(position)
+                    .title(position.latitude + ", " + position.longitude));
+        }
+
     }
 
     private class LocationRefresher implements Runnable {
@@ -166,27 +192,24 @@ public class MainActivity extends Activity implements LocationListener {
 
         @Override
         public void run() {
-            LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 15));
-            placeMarker(position);
-        }
-
-        public void placeMarker(LatLng position) {
-            map.clear();
-            map.addMarker(new MarkerOptions()
-                    .position(position)
-                    .title(position.latitude + "," + position.longitude));
         }
 
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        lastLat = location.getLatitude();
-        lastLng = location.getLongitude();
+        if (flag) {
+            lastLat = location.getLatitude();
+            lastLng = location.getLongitude();
 
-        LocationRefresher task = new LocationRefresher(location);
-        locationUpdateHandler.post(task);
+            LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 21));
+
+            flag = false;
+        }
+
+//        LocationRefresher task = new LocationRefresher(location);
+//        locationUpdateHandler.post(task);
     }
 
     @Override
