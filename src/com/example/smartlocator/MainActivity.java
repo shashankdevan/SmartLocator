@@ -1,9 +1,13 @@
 package com.example.smartlocator;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.provider.Settings;
 import android.util.Log;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -35,26 +39,27 @@ public class MainActivity extends Activity implements LocationListener {
     final private int MAGNETIC_DECLINATION = 0;
 
     private GoogleMap map;
+    private LocationManager locationManager;
     private SensorManager sensorManager;
     private SensorListener sensorListener = new SensorListener();
-    private Handler locationUpdateHandler = new Handler();
 
+    private Handler locationUpdateHandler = new Handler();
     private boolean isFirstUpdate = true;
     private long currentPeakTime;
     private long lastKnownPeakTime;
     private float acclMagnitude = 0;
+
     private boolean acclDirection = true;
 
     private int stepCount = 0;
-
     public static final int MIN_STEP_TIME = 200;
     private float[] acclReadings = new float[3];
-    private float[] filteredAccl = new float[3];
 
+    private float[] filteredAccl = new float[3];
     private boolean readAccl = false;
     private float[] magnReadings = new float[3];
-    private float[] filteredMagn = new float[3];
 
+    private float[] filteredMagn = new float[3];
     private boolean readMagn = false;
     private long lastMarkerUpdateTime;
     private double lastLat, lastLng;
@@ -68,11 +73,61 @@ public class MainActivity extends Activity implements LocationListener {
 
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
-        LocationManager locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_UPDATE_INTERVAL, 0, this);
+        locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
+        if (locationManager.isProviderEnabled(locationManager.GPS_PROVIDER))
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_UPDATE_INTERVAL, 0, this);
+        else
+            updateBestKnownLocation();
 
         sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
         currentPeakTime = System.currentTimeMillis();
+    }
+
+
+    private void updateBestKnownLocation() {
+        showEnableGpsDialog();
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Location gpsLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Location networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+            if (gpsLocation != null && networkLocation != null) {
+                if (gpsLocation.getTime() > networkLocation.getTime())
+                    updateLocationOnGpsDisabled(gpsLocation);
+                else
+                    updateLocationOnGpsDisabled(networkLocation);
+            } else if (gpsLocation != null) {
+                updateLocationOnGpsDisabled(gpsLocation);
+            } else if (networkLocation != null) {
+                updateLocationOnGpsDisabled(networkLocation);
+            }
+        }
+    }
+
+    private void showEnableGpsDialog() {
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setTitle("GPS Settings");
+        alertDialog.setMessage("GPS is not enabled. Do you want to go to settings menu?");
+
+	    alertDialog.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
+	        public void onClick(DialogInterface dialog,int which) {
+	            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+	            startActivity(intent);
+	        }
+	    });
+
+        alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        alertDialog.show();
+    }
+
+    private void updateLocationOnGpsDisabled(Location location) {
+        lastLat = location.getLatitude();
+        lastLng = location.getLongitude();
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEl));
     }
 
     @Override
