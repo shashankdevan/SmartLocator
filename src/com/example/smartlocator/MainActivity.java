@@ -55,6 +55,7 @@ public class MainActivity extends Activity implements LocationListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
         LocationManager locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
@@ -62,18 +63,18 @@ public class MainActivity extends Activity implements LocationListener {
 
         SensorManager sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
 
-        OrientationListener orientationListener = new OrientationListener();
+        SensorListener sensorListener = new SensorListener();
 
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        sensorManager.registerListener(orientationListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(sensorListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 
         Sensor magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        sensorManager.registerListener(orientationListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(sensorListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 
         currentPeakTime = System.currentTimeMillis();
     }
 
-    public class OrientationListener implements SensorEventListener {
+    public class SensorListener implements SensorEventListener {
 
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
