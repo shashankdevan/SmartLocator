@@ -24,27 +24,30 @@ public class MainActivity extends Activity implements LocationListener {
     public static final String WARN = "WARNING";
 
     public static final float THRESHOLD = 2.5f;
+    public static final int UPDATE_INTERVAL = 2000;
     private Handler locationUpdateHandler = new Handler();
     private GoogleMap map;
-    private float[] filteredAccl = {0, 0, 0};
-
     private long currentPeakTime;
+
     private float currentPeak = 0;
     private long lastKnownPeakTime;
-    private float lastKnownPeak = 0;
     private float acclMagnitude = 0;
     private boolean acclDirection = true;
     private int stepCount = 0;
+
+    public static final int MIN_STEP_TIME = 200;
     final private double STEP_SIZE = 0.419;
     final private double METER_PER_LAT_DEGREE = 78095.9773719797;
     final private double METER_PER_LNG_DEGREE = 90163.65604055098;
     final private int MAGNETIC_DECLINATION = 0;
 
     private float[] acclReadings = new float[3];
-    private float[] magnReadings = new float[3];
+    private float[] filteredAccl = new float[3];
     private boolean readAccl = false;
+
+    private float[] magnReadings = new float[3];
+    private float[] filteredMagn = new float[3];
     private boolean readMagn = false;
-    float[] filteredMagn = new float[3];
 
     private double lastUpdateTime;
     private double lastLat, lastLng;
@@ -99,7 +102,7 @@ public class MainActivity extends Activity implements LocationListener {
                     Log.d(WARN, "Invalid Sensor Received");
             }
 
-            if (readAccl && readMagn && (System.currentTimeMillis() - lastUpdateTime) > 2000) {
+            if (readAccl && readMagn && (System.currentTimeMillis() - lastUpdateTime) > UPDATE_INTERVAL) {
                 readAccl = readMagn = false;
 
                 float[] R = new float[9];
@@ -117,12 +120,9 @@ public class MainActivity extends Activity implements LocationListener {
         private void updateLocation(double azimuthalAngle) {
             Log.d("ANGLE", Double.valueOf(Math.toDegrees(azimuthalAngle)).toString());
             Log.d("METERS", String.valueOf((stepCount * STEP_SIZE) * Math.sin(azimuthalAngle)));
-            double deltaLat = (stepCount * STEP_SIZE) * Math.cos(azimuthalAngle) / METER_PER_LAT_DEGREE;
-            double deltaLng = (stepCount * STEP_SIZE) * Math.sin(azimuthalAngle) / METER_PER_LNG_DEGREE;
 
-
-            lastLat += deltaLat;
-            lastLng += deltaLng;
+            lastLat += (stepCount * STEP_SIZE) * Math.cos(azimuthalAngle) / METER_PER_LAT_DEGREE;
+            lastLng += (stepCount * STEP_SIZE) * Math.sin(azimuthalAngle) / METER_PER_LNG_DEGREE;
 
             stepCount = 0;
 
@@ -132,13 +132,11 @@ public class MainActivity extends Activity implements LocationListener {
         private void detectStep(float currentAcclMagnitude) {
             if (acclDirection) {
                 if (currentAcclMagnitude > acclMagnitude) {
-                    currentPeak = acclMagnitude = currentAcclMagnitude;
+                    acclMagnitude = currentAcclMagnitude;
                     currentPeakTime = System.currentTimeMillis();
                 } else if ((acclMagnitude - currentAcclMagnitude) > THRESHOLD) {
-                    if ((currentPeakTime - lastKnownPeakTime) > 200) {
+                    if ((currentPeakTime - lastKnownPeakTime) > MIN_STEP_TIME)
                         stepCount += 1;
-                    }
-                    lastKnownPeak = currentPeak;
                     lastKnownPeakTime = currentPeakTime;
                     acclMagnitude = currentAcclMagnitude;
                     acclDirection = false;
