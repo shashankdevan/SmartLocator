@@ -151,6 +151,7 @@ public class MainActivity extends Activity implements LocationListener {
     protected void onPause() {
         super.onPause();
         sensorManager.unregisterListener(sensorListener);
+        locationManager.removeUpdates(this);
         cameraPosition = map.getCameraPosition();
     }
 
