@@ -280,11 +280,11 @@ public class MainActivity extends Activity implements LocationListener {
         }
 
         public void placeMarker(LatLng position) {
-//            map.moveCamera(CameraUpdateFactory.newLatLng(position));
             map.clear();
             map.addMarker(new MarkerOptions()
                     .position(position)
                     .title(position.latitude + ", " + position.longitude));
+            map.moveCamera(CameraUpdateFactory.newLatLng(position));
         }
 
     }
