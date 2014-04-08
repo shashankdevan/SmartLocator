@@ -74,10 +74,6 @@ public class MainActivity extends Activity implements LocationListener {
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
         locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
-        if (locationManager.isProviderEnabled(locationManager.GPS_PROVIDER))
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_UPDATE_INTERVAL, 0, this);
-        else
-            updateBestKnownLocation();
 
         sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
         currentPeakTime = System.currentTimeMillis();
@@ -139,6 +135,11 @@ public class MainActivity extends Activity implements LocationListener {
 
         Sensor magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         sensorManager.registerListener(sensorListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+
+        if (locationManager.isProviderEnabled(locationManager.GPS_PROVIDER))
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_UPDATE_INTERVAL, 0, this);
+        else
+            updateBestKnownLocation();
 
         if (cameraPosition != null) {
             map.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
