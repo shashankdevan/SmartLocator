@@ -123,7 +123,7 @@ public class MainActivity extends Activity implements LocationListener {
     private void updateLocationOnGpsDisabled(Location location) {
         lastLat = location.getLatitude();
         lastLng = location.getLongitude();
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEl));
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEL));
     }
 
     @Override
