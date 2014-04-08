@@ -74,56 +74,8 @@ public class MainActivity extends Activity implements LocationListener {
         map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 
         locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
-
         sensorManager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
         currentPeakTime = System.currentTimeMillis();
-    }
-
-
-    private void updateBestKnownLocation() {
-        showEnableGpsDialog();
-        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Location gpsLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            Location networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-
-            if (gpsLocation != null && networkLocation != null) {
-                if (gpsLocation.getTime() > networkLocation.getTime())
-                    updateLocationOnGpsDisabled(gpsLocation);
-                else
-                    updateLocationOnGpsDisabled(networkLocation);
-            } else if (gpsLocation != null) {
-                updateLocationOnGpsDisabled(gpsLocation);
-            } else if (networkLocation != null) {
-                updateLocationOnGpsDisabled(networkLocation);
-            }
-        }
-    }
-
-    private void showEnableGpsDialog() {
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        alertDialog.setTitle("GPS Settings");
-        alertDialog.setMessage("GPS is not enabled. Do you want to go to settings menu?");
-
-	    alertDialog.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
-	        public void onClick(DialogInterface dialog,int which) {
-	            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-	            startActivity(intent);
-	        }
-	    });
-
-        alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-
-        alertDialog.show();
-    }
-
-    private void updateLocationOnGpsDisabled(Location location) {
-        lastLat = location.getLatitude();
-        lastLng = location.getLongitude();
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEL));
     }
 
     @Override
@@ -154,6 +106,53 @@ public class MainActivity extends Activity implements LocationListener {
         locationManager.removeUpdates(this);
         cameraPosition = map.getCameraPosition();
     }
+
+    private void updateBestKnownLocation() {
+        showEnableGpsDialog();
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Location gpsLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Location networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+            if (gpsLocation != null && networkLocation != null) {
+                if (gpsLocation.getTime() > networkLocation.getTime())
+                    updateLocationOnGpsDisabled(gpsLocation);
+                else
+                    updateLocationOnGpsDisabled(networkLocation);
+            } else if (gpsLocation != null) {
+                updateLocationOnGpsDisabled(gpsLocation);
+            } else if (networkLocation != null) {
+                updateLocationOnGpsDisabled(networkLocation);
+            }
+        }
+    }
+
+    private void showEnableGpsDialog() {
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setTitle("GPS Settings");
+        alertDialog.setMessage("GPS is not enabled. Do you want to go to settings menu?");
+
+        alertDialog.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(intent);
+            }
+        });
+
+        alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        alertDialog.show();
+    }
+
+    private void updateLocationOnGpsDisabled(Location location) {
+        lastLat = location.getLatitude();
+        lastLng = location.getLongitude();
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLng), DEFAULT_ZOOM_LEVEL));
+    }
+
 
     public class SensorListener implements SensorEventListener {
 
@@ -253,6 +252,7 @@ public class MainActivity extends Activity implements LocationListener {
 
     }
 
+
     private class SensorLocationRefresher implements Runnable {
 
         @Override
@@ -273,14 +273,9 @@ public class MainActivity extends Activity implements LocationListener {
         }
 
         private void updateLocation(double azimuthalAngle) {
-            Log.d("ANGLE", Double.valueOf(Math.toDegrees(azimuthalAngle)).toString());
-            Log.d("METERS", String.valueOf((stepCount * STEP_SIZE) * Math.sin(azimuthalAngle)));
-
             lastLat += (stepCount * STEP_SIZE) * Math.cos(azimuthalAngle) / METER_PER_LAT_DEGREE;
             lastLng += (stepCount * STEP_SIZE) * Math.sin(azimuthalAngle) / METER_PER_LNG_DEGREE;
-
             stepCount = 0;
-
             placeMarker(new LatLng(lastLat, lastLng));
         }
 
@@ -293,6 +288,7 @@ public class MainActivity extends Activity implements LocationListener {
         }
 
     }
+
 
     private class GpsLocationRefresher implements Runnable {
 
