@@ -34,10 +34,10 @@ public class MainActivity extends Activity implements LocationListener {
 
     public static final float ACCL_THRESHOLD = 2.5f;
     public static final int MARKER_UPDATE_INTERVAL = 2000;
-    public static final int GPS_UPDATE_INTERVAL = 60000;
+    public static final int GPS_UPDATE_INTERVAL = 180000;
     public static final int DEFAULT_ZOOM_LEVEL = 18;
 
-    final private double STEP_SIZE = 0.838;
+    final private double STEP_SIZE = 1.171;
     public static final int MIN_STEP_TIME = 200;
     final private double METER_PER_LAT_DEGREE = 78095.9773719797;
     final private double METER_PER_LNG_DEGREE = 90163.65604055098;
